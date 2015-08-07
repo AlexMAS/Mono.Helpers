@@ -51,3 +51,15 @@ foreach (var process in LinuxProcess.GetProcesses())
         process.Id, process.ProcessName, process.ProcessState, process.CommandLine);
 }
 ```
+
+## NuGet
+
+https://www.nuget.org/packages/Mono.Helpers/
+
+```powershell
+Install-Package Mono.Helpers
+```
+
+## Notes
+
+Currently Mono.Helpers code is tested only on Ubuntu 14.04.2 LTS.
