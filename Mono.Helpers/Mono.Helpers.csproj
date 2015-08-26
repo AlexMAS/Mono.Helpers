@@ -46,13 +46,17 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IO\BaseFileChannelHandler.cs" />
+    <Compile Include="IO\DelegateFileChannelHandler.cs" />
     <Compile Include="IO\FileChannel.cs" />
     <Compile Include="IO\FileChannelClient.cs" />
     <Compile Include="IO\FileChannelClientDispatcher.cs" />
+    <Compile Include="IO\FileChannelExtensions.cs" />
     <Compile Include="IO\FileChannelHistory.cs" />
     <Compile Include="IO\FileChannelServer.cs" />
     <Compile Include="IO\FileChannelServerDispatcher.cs" />
     <Compile Include="IO\IFileChannelFormatter.cs" />
+    <Compile Include="IO\IFileChannelHandler.cs" />
     <Compile Include="IO\JsonFileChannelFormatter.cs" />
     <Compile Include="MonoHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

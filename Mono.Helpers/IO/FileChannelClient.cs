@@ -22,7 +22,7 @@ namespace System.IO
 
 			if (string.IsNullOrEmpty(directory))
 			{
-				directory = Path.GetTempPath();
+				directory = AppDomain.CurrentDomain.BaseDirectory;
 			}
 
 			if (formatter == null)

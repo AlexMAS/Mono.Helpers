@@ -13,7 +13,7 @@ namespace System.IO
 
 			if (string.IsNullOrEmpty(directory))
 			{
-				directory = Path.GetTempPath();
+				directory = AppDomain.CurrentDomain.BaseDirectory;
 			}
 
 			if (formatter == null)
@@ -22,15 +22,15 @@ namespace System.IO
 			}
 
 			_dispatcher = new FileChannelServerDispatcher(directory, channel, formatter, OnReciveRequestMessage);
-			_handlers = new Dictionary<string, Func<object, object>>();
+			_handlers = new Dictionary<string, IFileChannelHandler>();
 		}
 
 
 		private readonly FileChannelServerDispatcher _dispatcher;
-		private readonly Dictionary<string, Func<object, object>> _handlers;
+		private readonly Dictionary<string, IFileChannelHandler> _handlers;
 
 
-		public FileChannelServer Subscribe(string action, Func<object, object> handler)
+		public FileChannelServer Subscribe(string action, IFileChannelHandler handler)
 		{
 			if (string.IsNullOrEmpty(action))
 			{
@@ -74,17 +74,22 @@ namespace System.IO
 				Action = request.Action
 			};
 
-			Func<object, object> handler;
+			IFileChannelHandler handler;
+
+			object replyResult = null;
+			Exception replyError = null;
 
 			if (_handlers.TryGetValue(reply.Action, out handler))
 			{
 				try
 				{
-					reply.Result = handler(request.Arguments);
+					replyResult = handler.Handle(request.Arguments);
+					reply.Result = replyResult;
 				}
 				catch (Exception error)
 				{
-					reply.Exception = error.Message;
+					replyError = error;
+					reply.Exception = replyError.Message;
 					reply.IsFaulted = true;
 				}
 
@@ -92,6 +97,30 @@ namespace System.IO
 			}
 
 			_dispatcher.Reply(reply.ClientName, reply);
+
+			if (handler != null)
+			{
+				if (reply.IsFaulted)
+				{
+					try
+					{
+						handler.OnError(request, replyError);
+					}
+					catch
+					{
+					}
+				}
+				else
+				{
+					try
+					{
+						handler.OnSuccess(request, replyResult);
+					}
+					catch
+					{
+					}
+				}
+			}
 		}
 
 
