@@ -20,32 +20,36 @@ namespace System.ServiceProcess.Linux
 
 		public void Start(TimeSpan timeout)
 		{
-			Start(timeout.Milliseconds);
+			Start((int)timeout.TotalMilliseconds);
 		}
 
 		public void Start(int timeout = Timeout.Infinite)
 		{
-			var result = MonoHelper.ExecuteShellCommand("service {0} start", timeout, ServiceName);
-
-			if (result.ExitCode != 0)
+			try
 			{
-				throw new InvalidOperationException(string.Format(Properties.Resources.CantStartService, ServiceName, result.Completed ? result.Output : null));
+				MonoHelper.ExecuteProcess("service", string.Format(" {0} start", ServiceName), timeout).Wait();
+			}
+			catch (Exception error)
+			{
+				throw new InvalidOperationException(string.Format(Properties.Resources.CantStartService, ServiceName), error);
 			}
 		}
 
 
 		public void Stop(TimeSpan timeout)
 		{
-			Stop(timeout.Milliseconds);
+			Stop((int)timeout.TotalMilliseconds);
 		}
 
 		public void Stop(int timeout = Timeout.Infinite)
 		{
-			var result = MonoHelper.ExecuteShellCommand("service {0} stop", timeout, ServiceName);
-
-			if (result.ExitCode != 0)
+			try
 			{
-				throw new InvalidOperationException(string.Format(Properties.Resources.CantStopService, ServiceName, result.Completed ? result.Output : null));
+				MonoHelper.ExecuteProcess("service", string.Format(" {0} stop", ServiceName), timeout).Wait();
+			}
+			catch (Exception error)
+			{
+				throw new InvalidOperationException(string.Format(Properties.Resources.CantStopService, ServiceName), error);
 			}
 		}
 

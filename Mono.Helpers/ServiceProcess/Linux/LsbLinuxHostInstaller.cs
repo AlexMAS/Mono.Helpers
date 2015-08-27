@@ -11,9 +11,6 @@ namespace System.ServiceProcess.Linux
 {
 	public sealed class LsbLinuxHostInstaller : Installer
 	{
-		private const int Timeout = 60 * 1000;
-
-
 		public LsbLinuxHostInstaller(LinuxServiceSettings settings)
 			: this(settings, null, LinuxServiceLogWriter.Null)
 		{
@@ -174,11 +171,14 @@ namespace System.ServiceProcess.Linux
 			// Выполнение команды: 'update-rc.d <serviceFile> defaults'
 
 			var serviceFile = Path.GetFileName(BuildServicePath(settings));
-			var commandResult = MonoHelper.ExecuteShellCommand("update-rc.d {0} defaults", Timeout, serviceFile);
 
-			if (commandResult.ExitCode != 0)
+			try
 			{
-				throw new InstallException(string.Format(Properties.Resources.CantRegisterServiceFile, serviceFile, commandResult.Completed ? commandResult.Output : null));
+				MonoHelper.ExecuteProcess("update-rc.d", string.Format(" {0} defaults", serviceFile)).Wait();
+			}
+			catch (Exception error)
+			{
+				throw new InstallException(string.Format(Properties.Resources.CantRegisterServiceFile, serviceFile), error);
 			}
 		}
 
@@ -187,11 +187,14 @@ namespace System.ServiceProcess.Linux
 			// Выполнение команды: 'update-rc.d -f <serviceFile> remove'
 
 			var serviceFile = Path.GetFileName(BuildServicePath(settings));
-			var commandResult = MonoHelper.ExecuteShellCommand("update-rc.d -f {0} remove", Timeout, serviceFile);
 
-			if (commandResult.ExitCode != 0)
+			try
 			{
-				throw new InstallException(string.Format(Properties.Resources.CantUnregisterServiceFile, serviceFile, commandResult.Completed ? commandResult.Output : null));
+				MonoHelper.ExecuteProcess("update-rc.d", string.Format(" -f {0} remove", serviceFile)).Wait();
+			}
+			catch (Exception error)
+			{
+				throw new InstallException(string.Format(Properties.Resources.CantUnregisterServiceFile, serviceFile), error);
 			}
 		}
 

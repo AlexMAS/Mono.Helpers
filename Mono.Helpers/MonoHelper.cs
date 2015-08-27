@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Threading.Tasks;
 
 using Mono.Unix.Native;
 
@@ -6,6 +7,9 @@ namespace System
 {
 	public static class MonoHelper
 	{
+		public const int DefaultTimeout = 60 * 1000;
+
+
 		public static bool RunningAsRoot
 		{
 			get
@@ -41,37 +45,54 @@ namespace System
 		}
 
 
-		public static ProcessResult ExecuteShellCommand(string command, int timeout, params object[] arguments)
+		public static Task ExecuteProcess(string fileName, string arguments = null, int timeout = DefaultTimeout)
 		{
-			if (string.IsNullOrWhiteSpace(command))
+			if (string.IsNullOrWhiteSpace(fileName))
 			{
-				throw new ArgumentNullException("command");
+				throw new ArgumentNullException("fileName");
 			}
 
-			var result = new ProcessResult();
-
-			command = string.Format(command, arguments).Trim();
-
-			using (var shellProcess = new Process())
+			return Task.Run(() =>
 			{
-				shellProcess.StartInfo.FileName = "sh";
-				shellProcess.StartInfo.Arguments = string.Format("-c '{0}'", command);
-				shellProcess.StartInfo.UseShellExecute = false;
-				shellProcess.StartInfo.RedirectStandardOutput = true;
-				shellProcess.Start();
+				fileName = fileName.Trim();
+				arguments = (arguments ?? "").Trim();
 
-				if (shellProcess.WaitForExit(timeout))
+				var result = new ProcessResult();
+
+				using (var process = new Process())
 				{
-					result.Completed = true;
-					result.ExitCode = shellProcess.ExitCode;
-					result.Output = shellProcess.StandardOutput.ReadToEnd();
-				}
-			}
+					process.StartInfo.FileName = fileName;
+					process.StartInfo.Arguments = arguments;
+					process.StartInfo.UseShellExecute = false;
+					process.StartInfo.CreateNoWindow = true;
+					process.StartInfo.RedirectStandardOutput = true;
+					process.StartInfo.RedirectStandardError = true;
+					process.Start();
 
-			return result;
+					if (process.WaitForExit(timeout))
+					{
+						result.Completed = true;
+						result.ExitCode = process.ExitCode;
+						result.Output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
+					}
+				}
+
+				if (!result.Completed || result.ExitCode != 0)
+				{
+					var processName = fileName + (string.IsNullOrEmpty(arguments) ? string.Empty : (" " + arguments));
+
+					if (result.Completed)
+					{
+						throw new InvalidOperationException(string.Format(Properties.Resources.ProcessCompletedWithAnError, processName, result.ExitCode, result.Output));
+					}
+
+					throw new InvalidOperationException(string.Format(Properties.Resources.ProcessCompletedWithAnErrorByTimeout, processName, timeout));
+				}
+			});
 		}
 
-		public struct ProcessResult
+
+		private struct ProcessResult
 		{
 			public bool Completed;
 			public int? ExitCode;
