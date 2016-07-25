@@ -1,4 +1,4 @@
-call "%VS120COMNTOOLS%VsDevCmd.bat"
+call "%VS140COMNTOOLS%VsDevCmd.bat"
 nuget.exe restore "..\Mono.Helpers.sln"
 msbuild "..\Mono.Helpers.sln" /t:Clean /p:Configuration=Release 
 msbuild "..\Mono.Helpers.sln" /p:Configuration=Release 
