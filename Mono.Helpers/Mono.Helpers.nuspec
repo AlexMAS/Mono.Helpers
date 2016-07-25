@@ -1,24 +1,24 @@
 ﻿<?xml version="1.0"?>
 <package xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-	<metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
-		<id>Mono.Helpers</id>
-		<version>1.2.1</version>
-		<title>Mono.Helpers</title>
-		<authors>Alexander Mezhov</authors>
-		<owners>Alexander Mezhov</owners>
-		<licenseUrl>http://www.opensource.org/licenses/mit-license.php</licenseUrl>
-		<projectUrl>https://github.com/AlexMAS/Mono.Helpers</projectUrl>
-		<requireLicenseAcceptance>false</requireLicenseAcceptance>
-		<description>Extensions for Mono/Linux: processes, signals, services, daemons and etc.</description>
-		<copyright>Copyright © Alexander Mezhov 2015</copyright>
-		<tags>Mono Linux Unix process signal service daemon</tags>
-		<dependencies>
-			<dependency id="Mono.Posix-4.5" version="4.5.0" />
-			<dependency id="Newtonsoft.Json" version="7.0.1" />
-		</dependencies>
-	</metadata>
-	<files>
-		<file src="bin\Release\Mono.Helpers.*" target="lib\net45" />
-		<file src="**\*.cs" target="src" />
-	</files>
+    <metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+        <id>Mono.Helpers</id>
+        <version>1.3.0</version>
+        <title>Mono.Helpers</title>
+        <authors>Alexander Mezhov</authors>
+        <owners>Alexander Mezhov</owners>
+        <licenseUrl>http://www.opensource.org/licenses/mit-license.php</licenseUrl>
+        <projectUrl>https://github.com/AlexMAS/Mono.Helpers</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Extensions for Mono/Linux: processes, signals, services, daemons and etc.</description>
+        <copyright>Copyright © Alexander Mezhov 2016</copyright>
+        <tags>Mono Linux Unix process signal service daemon</tags>
+        <dependencies>
+            <dependency id="Mono.Posix-4.5" version="4.5.0" />
+            <dependency id="Newtonsoft.Json" version="9.0.1" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="bin\Release\Mono.Helpers.*" target="lib\net45" />
+        <file src="**\*.cs" target="src" />
+    </files>
 </package>

@@ -1,11 +1,11 @@
 ﻿namespace System.IO
 {
-	public interface IFileChannelHandler
-	{
-		object Handle(object request);
+    public interface IFileChannelHandler
+    {
+        object Handle(object request);
 
-		void OnSuccess(object request, object reply);
+        void OnSuccess(object request, object reply);
 
-		void OnError(object request, Exception error);
-	}
+        void OnError(object request, Exception error);
+    }
 }

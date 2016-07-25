@@ -9,270 +9,270 @@ using Mono.Unix.Native;
 
 namespace System.ServiceProcess.Linux
 {
-	public sealed class LsbLinuxHostInstaller : Installer
-	{
-		public LsbLinuxHostInstaller(LinuxServiceSettings settings)
-			: this(settings, null, LinuxServiceLogWriter.Null)
-		{
-		}
+    public sealed class LsbLinuxHostInstaller : Installer
+    {
+        public LsbLinuxHostInstaller(LinuxServiceSettings settings)
+            : this(settings, null, LinuxServiceLogWriter.Null)
+        {
+        }
 
-		public LsbLinuxHostInstaller(LinuxServiceSettings settings, Installer[] installers)
-			: this(settings, installers, LinuxServiceLogWriter.Null)
-		{
-		}
+        public LsbLinuxHostInstaller(LinuxServiceSettings settings, Installer[] installers)
+            : this(settings, installers, LinuxServiceLogWriter.Null)
+        {
+        }
 
-		public LsbLinuxHostInstaller(LinuxServiceSettings settings, Installer[] installers, LinuxServiceLogWriter logWriter)
-		{
-			if (settings == null)
-			{
-				throw new ArgumentNullException("settings");
-			}
+        public LsbLinuxHostInstaller(LinuxServiceSettings settings, Installer[] installers, LinuxServiceLogWriter logWriter)
+        {
+            if (settings == null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
 
-			_settings = settings;
-			_installers = installers;
-			_logWriter = logWriter;
+            _settings = settings;
+            _installers = installers;
+            _logWriter = logWriter;
 
-			_installTransaction = new TransactionManager<LinuxServiceSettings>(_logWriter)
-				.Stage(Properties.Resources.CreateServiceFileStage, CreateServiceFile, DeleteServiceFile)
-				.Stage(Properties.Resources.SetServiceFileAsExecutableStage, SetServiceFileAsExecutable)
-				.Stage(Properties.Resources.RegisterServiceFileStage, RegisterServiceFile, UnregisterServiceFile);
-		}
-
-
-		private readonly Installer[] _installers;
-		private readonly LinuxServiceSettings _settings;
-		private readonly LinuxServiceLogWriter _logWriter;
-		private readonly TransactionManager<LinuxServiceSettings> _installTransaction;
+            _installTransaction = new TransactionManager<LinuxServiceSettings>(_logWriter)
+                .Stage(Properties.Resources.CreateServiceFileStage, CreateServiceFile, DeleteServiceFile)
+                .Stage(Properties.Resources.SetServiceFileAsExecutableStage, SetServiceFileAsExecutable)
+                .Stage(Properties.Resources.RegisterServiceFileStage, RegisterServiceFile, UnregisterServiceFile);
+        }
 
 
-		public override void Install(IDictionary stateSaver)
-		{
-			if (_installers != null)
-			{
-				Installers.AddRange(_installers);
-			}
-
-			var serviceName = BuildServiceName(_settings);
-
-			_logWriter.InfoFormat(Properties.Resources.InstallingServiceIsStarted, serviceName);
-
-			try
-			{
-				base.Install(stateSaver);
-
-				_installTransaction.Execute(_settings);
-
-				_logWriter.InfoFormat(Properties.Resources.InstallingServiceIsSuccessfullyCompleted, serviceName);
-			}
-			catch (Exception error)
-			{
-				error = new InstallException(string.Format(Properties.Resources.InstallingServiceFailed, serviceName), error);
-				_logWriter.ErrorFormat(Properties.Resources.InstallingServiceIsCompletedWithErrors, serviceName, error);
-				throw error;
-			}
-		}
-
-		public override void Uninstall(IDictionary savedState)
-		{
-			if (_installers != null)
-			{
-				Installers.AddRange(_installers);
-			}
-
-			var serviceName = BuildServiceName(_settings);
-
-			_logWriter.InfoFormat(Properties.Resources.UninstallingServiceIsStarted, serviceName);
-
-			var errors = new List<Exception>();
-
-			try
-			{
-				_installTransaction.Rollback(_settings);
-			}
-			catch (Exception error)
-			{
-				errors.Add(error);
-			}
-
-			try
-			{
-				base.Uninstall(savedState);
-			}
-			catch (Exception error)
-			{
-				errors.Add(error);
-			}
-
-			if (errors.Count > 1)
-			{
-				Exception error = new AggregateException(string.Format(Properties.Resources.UninstallingServiceFailed, serviceName), errors);
-				error = new InstallException(string.Format(Properties.Resources.UninstallingServiceFailed, serviceName), error);
-				_logWriter.ErrorFormat(Properties.Resources.UninstallingServiceIsCompletedWithErrors, serviceName, error);
-				throw error;
-			}
-
-			if (errors.Count == 1)
-			{
-				var error = new InstallException(string.Format(Properties.Resources.UninstallingServiceFailed, serviceName), errors[0]);
-				_logWriter.ErrorFormat(Properties.Resources.UninstallingServiceIsCompletedWithErrors, serviceName, error);
-				throw error;
-			}
-
-			_logWriter.InfoFormat(Properties.Resources.UninstallingServiceIsSuccessfullyCompleted, serviceName);
-		}
+        private readonly Installer[] _installers;
+        private readonly LinuxServiceSettings _settings;
+        private readonly LinuxServiceLogWriter _logWriter;
+        private readonly TransactionManager<LinuxServiceSettings> _installTransaction;
 
 
-		private void CreateServiceFile(LinuxServiceSettings settings)
-		{
-			// Создание скрипта в '/etc/init.d'
+        public override void Install(IDictionary stateSaver)
+        {
+            if (_installers != null)
+            {
+                Installers.AddRange(_installers);
+            }
 
-			var serviceName = BuildServiceName(settings);
-			var serviceFile = BuildServicePath(settings);
-			var serviceScript = BuildServiceScript(settings, serviceName);
+            var serviceName = BuildServiceName(_settings);
 
-			File.WriteAllText(serviceFile, serviceScript);
-		}
+            _logWriter.InfoFormat(Properties.Resources.InstallingServiceIsStarted, serviceName);
 
-		private static void DeleteServiceFile(LinuxServiceSettings settings)
-		{
-			// Удаление скрипта из '/etc/init.d'
+            try
+            {
+                base.Install(stateSaver);
 
-			var serviceFile = BuildServicePath(settings);
+                _installTransaction.Execute(_settings);
 
-			if (File.Exists(serviceFile))
-			{
-				File.Delete(serviceFile);
-			}
-		}
+                _logWriter.InfoFormat(Properties.Resources.InstallingServiceIsSuccessfullyCompleted, serviceName);
+            }
+            catch (Exception error)
+            {
+                error = new InstallException(string.Format(Properties.Resources.InstallingServiceFailed, serviceName), error);
+                _logWriter.ErrorFormat(Properties.Resources.InstallingServiceIsCompletedWithErrors, serviceName, error);
+                throw error;
+            }
+        }
 
-		private static void SetServiceFileAsExecutable(LinuxServiceSettings settings)
-		{
-			// Выполнение команды: 'chmod +x <serviceFile>'
+        public override void Uninstall(IDictionary savedState)
+        {
+            if (_installers != null)
+            {
+                Installers.AddRange(_installers);
+            }
 
-			var serviceFile = BuildServicePath(settings);
+            var serviceName = BuildServiceName(_settings);
 
-			Stat fileStatus;
+            _logWriter.InfoFormat(Properties.Resources.UninstallingServiceIsStarted, serviceName);
 
-			// Определение состояния файла
-			if (Syscall.stat(serviceFile, out fileStatus) != 0)
-			{
-				throw new InstallException(string.Format(Properties.Resources.CantRetrieveFileStatus, serviceFile));
-			}
+            var errors = new List<Exception>();
 
-			// Разрешение исполнения файла
-			if (Syscall.chmod(serviceFile, fileStatus.st_mode | FilePermissions.S_IXUSR | FilePermissions.S_IXGRP | FilePermissions.S_IXOTH) != 0)
-			{
-				throw new InstallException(string.Format(Properties.Resources.CantSetFileAsExecutable, serviceFile));
-			}
-		}
+            try
+            {
+                _installTransaction.Rollback(_settings);
+            }
+            catch (Exception error)
+            {
+                errors.Add(error);
+            }
 
-		private static void RegisterServiceFile(LinuxServiceSettings settings)
-		{
-			// Выполнение команды: 'update-rc.d <serviceFile> defaults'
+            try
+            {
+                base.Uninstall(savedState);
+            }
+            catch (Exception error)
+            {
+                errors.Add(error);
+            }
 
-			var serviceFile = Path.GetFileName(BuildServicePath(settings));
+            if (errors.Count > 1)
+            {
+                Exception error = new AggregateException(string.Format(Properties.Resources.UninstallingServiceFailed, serviceName), errors);
+                error = new InstallException(string.Format(Properties.Resources.UninstallingServiceFailed, serviceName), error);
+                _logWriter.ErrorFormat(Properties.Resources.UninstallingServiceIsCompletedWithErrors, serviceName, error);
+                throw error;
+            }
 
-			try
-			{
-				MonoHelper.ExecuteProcess("update-rc.d", string.Format(" {0} defaults", serviceFile)).Wait();
-			}
-			catch (Exception error)
-			{
-				throw new InstallException(string.Format(Properties.Resources.CantRegisterServiceFile, serviceFile), error);
-			}
-		}
+            if (errors.Count == 1)
+            {
+                var error = new InstallException(string.Format(Properties.Resources.UninstallingServiceFailed, serviceName), errors[0]);
+                _logWriter.ErrorFormat(Properties.Resources.UninstallingServiceIsCompletedWithErrors, serviceName, error);
+                throw error;
+            }
 
-		private static void UnregisterServiceFile(LinuxServiceSettings settings)
-		{
-			// Выполнение команды: 'update-rc.d -f <serviceFile> remove'
-
-			var serviceFile = Path.GetFileName(BuildServicePath(settings));
-
-			try
-			{
-				MonoHelper.ExecuteProcess("update-rc.d", string.Format(" -f {0} remove", serviceFile)).Wait();
-			}
-			catch (Exception error)
-			{
-				throw new InstallException(string.Format(Properties.Resources.CantUnregisterServiceFile, serviceFile), error);
-			}
-		}
+            _logWriter.InfoFormat(Properties.Resources.UninstallingServiceIsSuccessfullyCompleted, serviceName);
+        }
 
 
-		private static string BuildServiceScript(LinuxServiceSettings settings, string serviceName)
-		{
-			return new StringBuilder(Properties.Resources.LsbLinuxServiceScript)
-				.Replace("<ServiceName>", serviceName)
-				.Replace("<Dependencies>", BuildDependencies(settings))
-				.Replace("<DisplayName>", BuildDisplayName(settings))
-				.Replace("<Description>", BuildDescription(settings))
-				.Replace("<ServiceDir>", BuildServiceDirectory(settings))
-				.Replace("<ServiceExe>", BuildServiceExecutable(settings))
-				.Replace("<ServiceArgs>", BuildServiceArguments(settings))
-				.Replace("<ServiceUser>", BuildServiceUser(settings))
-				.Replace("<ServicePidDir>", "/var/run")
-				.Replace("\r\n", "\n")
-				.ToString();
-		}
+        private void CreateServiceFile(LinuxServiceSettings settings)
+        {
+            // Создание скрипта в '/etc/init.d'
 
-		private static string BuildServiceName(LinuxServiceSettings settings)
-		{
-			return settings.ServiceName;
-		}
+            var serviceName = BuildServiceName(settings);
+            var serviceFile = BuildServicePath(settings);
+            var serviceScript = BuildServiceScript(settings, serviceName);
 
-		private static string BuildServicePath(LinuxServiceSettings settings)
-		{
-			var serviceName = BuildServiceName(settings);
-			return Path.Combine("/etc/init.d", serviceName);
-		}
+            File.WriteAllText(serviceFile, serviceScript);
+        }
 
-		private static string BuildDisplayName(LinuxServiceSettings settings)
-		{
-			return string.IsNullOrWhiteSpace(settings.DisplayName)
-				? BuildServiceName(settings) : settings.DisplayName;
-		}
+        private static void DeleteServiceFile(LinuxServiceSettings settings)
+        {
+            // Удаление скрипта из '/etc/init.d'
 
-		private static string BuildDescription(LinuxServiceSettings settings)
-		{
-			return string.IsNullOrWhiteSpace(settings.Description)
-				? BuildDisplayName(settings) : settings.Description;
-		}
+            var serviceFile = BuildServicePath(settings);
 
-		private static string BuildServiceDirectory(LinuxServiceSettings settings)
-		{
-			return Path.GetDirectoryName(settings.ServiceExe);
-		}
+            if (File.Exists(serviceFile))
+            {
+                File.Delete(serviceFile);
+            }
+        }
 
-		private static string BuildServiceExecutable(LinuxServiceSettings settings)
-		{
-			return Path.GetFileName(settings.ServiceExe);
-		}
+        private static void SetServiceFileAsExecutable(LinuxServiceSettings settings)
+        {
+            // Выполнение команды: 'chmod +x <serviceFile>'
 
-		private static string BuildServiceArguments(LinuxServiceSettings settings)
-		{
-			return string.IsNullOrWhiteSpace(settings.ServiceArgs) ? string.Empty : settings.ServiceArgs.Trim();
-		}
+            var serviceFile = BuildServicePath(settings);
 
-		private static string BuildServiceUser(LinuxServiceSettings settings)
-		{
-			return string.IsNullOrWhiteSpace(settings.Username) ? Environment.UserName : settings.Username.Trim();
-		}
+            Stat fileStatus;
 
-		private static string BuildDependencies(LinuxServiceSettings settings)
-		{
-			var dependencies = settings.Dependencies;
+            // Определение состояния файла
+            if (Syscall.stat(serviceFile, out fileStatus) != 0)
+            {
+                throw new InstallException(string.Format(Properties.Resources.CantRetrieveFileStatus, serviceFile));
+            }
 
-			if (dependencies != null && dependencies.Length > 0)
-			{
-				dependencies = settings.Dependencies.Where(d => !string.IsNullOrWhiteSpace(d)).ToArray();
-			}
+            // Разрешение исполнения файла
+            if (Syscall.chmod(serviceFile, fileStatus.st_mode | FilePermissions.S_IXUSR | FilePermissions.S_IXGRP | FilePermissions.S_IXOTH) != 0)
+            {
+                throw new InstallException(string.Format(Properties.Resources.CantSetFileAsExecutable, serviceFile));
+            }
+        }
 
-			if (dependencies == null || dependencies.Length <= 0)
-			{
-				dependencies = new[] { "$local_fs", "$network", "$remote_fs", "$syslog" };
-			}
+        private static void RegisterServiceFile(LinuxServiceSettings settings)
+        {
+            // Выполнение команды: 'update-rc.d <serviceFile> defaults'
 
-			return string.Join(" ", dependencies);
-		}
-	}
+            var serviceFile = Path.GetFileName(BuildServicePath(settings));
+
+            try
+            {
+                MonoHelper.ExecuteProcessSync("update-rc.d", $" {serviceFile} defaults");
+            }
+            catch (Exception error)
+            {
+                throw new InstallException(string.Format(Properties.Resources.CantRegisterServiceFile, serviceFile), error);
+            }
+        }
+
+        private static void UnregisterServiceFile(LinuxServiceSettings settings)
+        {
+            // Выполнение команды: 'update-rc.d -f <serviceFile> remove'
+
+            var serviceFile = Path.GetFileName(BuildServicePath(settings));
+
+            try
+            {
+                MonoHelper.ExecuteProcessSync("update-rc.d", $" -f {serviceFile} remove");
+            }
+            catch (Exception error)
+            {
+                throw new InstallException(string.Format(Properties.Resources.CantUnregisterServiceFile, serviceFile), error);
+            }
+        }
+
+
+        private static string BuildServiceScript(LinuxServiceSettings settings, string serviceName)
+        {
+            return new StringBuilder(Properties.Resources.LsbLinuxServiceScript)
+                .Replace("<ServiceName>", serviceName)
+                .Replace("<Dependencies>", BuildDependencies(settings))
+                .Replace("<DisplayName>", BuildDisplayName(settings))
+                .Replace("<Description>", BuildDescription(settings))
+                .Replace("<ServiceDir>", BuildServiceDirectory(settings))
+                .Replace("<ServiceExe>", BuildServiceExecutable(settings))
+                .Replace("<ServiceArgs>", BuildServiceArguments(settings))
+                .Replace("<ServiceUser>", BuildServiceUser(settings))
+                .Replace("<ServicePidDir>", "/var/run")
+                .Replace("\r\n", "\n")
+                .ToString();
+        }
+
+        private static string BuildServiceName(LinuxServiceSettings settings)
+        {
+            return settings.ServiceName;
+        }
+
+        private static string BuildServicePath(LinuxServiceSettings settings)
+        {
+            var serviceName = BuildServiceName(settings);
+            return Path.Combine("/etc/init.d", serviceName);
+        }
+
+        private static string BuildDisplayName(LinuxServiceSettings settings)
+        {
+            return string.IsNullOrWhiteSpace(settings.DisplayName)
+                ? BuildServiceName(settings) : settings.DisplayName;
+        }
+
+        private static string BuildDescription(LinuxServiceSettings settings)
+        {
+            return string.IsNullOrWhiteSpace(settings.Description)
+                ? BuildDisplayName(settings) : settings.Description;
+        }
+
+        private static string BuildServiceDirectory(LinuxServiceSettings settings)
+        {
+            return Path.GetDirectoryName(settings.ServiceExe);
+        }
+
+        private static string BuildServiceExecutable(LinuxServiceSettings settings)
+        {
+            return Path.GetFileName(settings.ServiceExe);
+        }
+
+        private static string BuildServiceArguments(LinuxServiceSettings settings)
+        {
+            return string.IsNullOrWhiteSpace(settings.ServiceArgs) ? string.Empty : settings.ServiceArgs.Trim();
+        }
+
+        private static string BuildServiceUser(LinuxServiceSettings settings)
+        {
+            return string.IsNullOrWhiteSpace(settings.Username) ? Environment.UserName : settings.Username.Trim();
+        }
+
+        private static string BuildDependencies(LinuxServiceSettings settings)
+        {
+            var dependencies = settings.Dependencies;
+
+            if (dependencies != null && dependencies.Length > 0)
+            {
+                dependencies = settings.Dependencies.Where(d => !string.IsNullOrWhiteSpace(d)).ToArray();
+            }
+
+            if (dependencies == null || dependencies.Length <= 0)
+            {
+                dependencies = new[] { "$local_fs", "$network", "$remote_fs", "$syslog" };
+            }
+
+            return string.Join(" ", dependencies);
+        }
+    }
 }

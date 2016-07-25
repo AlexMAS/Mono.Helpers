@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="CannotExecuteCommand" xml:space="preserve">
+    <value>Can not execute command '{0}' with arguments '{1}'. Error: '{2}'.</value>
+  </data>
   <data name="CantExecuteStage" xml:space="preserve">
     <value>Cannot execute stage: '{0}'.</value>
   </data>
